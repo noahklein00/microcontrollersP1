@@ -4,6 +4,7 @@
 
 .ORG 0
 
+;///////////////// INITIALIZATION ///////////////////
 		LDI R16, HIGH(RAMEND) ; Set the high and low bits of the stack pointer
 		OUT SPH, R16
 		LDI R16, LOW(RAMEND)
@@ -19,6 +20,8 @@
 		LDI R22, 0 ; Temporary register used for MOV instructions
 		LDI R23, 20 ; CONSTANT 20
 		LDI R24, 1 ; CONSTANT 1
+		LDI R29, 0 ; CONSTANT 0
+		LDI R31, 30 ; CONSTANT 30
 
 ;////////////// MAIN LOOP ////////////////////
 ; MAIN loop checks for active buttons and calls increment or decrement functions
@@ -26,7 +29,52 @@ MAIN:	SBIC PIND, 4
 		CALL LEFT_DEC
 		SBIC PINF, 6
 		CALL RIGHT_INC
+		MOV R30, R21 ; copy counter
+		SUB R30, R29 ; check if 0
+		BREQ TURN_OFF
+		MOV R30, R21 ; copy counter
+		SUB R30, R23 ; check if 20
+		ADD R30, R24 ; check if 0
+		BREQ TURN_ON
+		CALL FLASH_LED
 		RJMP MAIN
+
+;////////////// LED FUNCTIONS ////////////////////
+
+TURN_ON:	SBI PORTC, 7 ; Activate LED
+			RJMP MAIN
+
+TURN_OFF:	CBI PORTC, 7 ; Deactivate LED
+			RJMP MAIN
+
+FLASH_LED: ;Called when 0 < count < 19
+	SBI PORTC, 7
+	CALL DELAY_LED
+	CBI PORTC, 7
+	CALL DELAY_LED
+	RET
+
+
+DELAY_LED:	MOV R25, R31 ; Sets registers with 30
+			SUB R25, R21 ; Subtracts the value of the counter, the higher the counter, the lower the value, the shorter the loop
+	LOOP1:	MOV R26, R31 ; same
+			SUB R26, R21
+	LOOP2:	MOV R27, R31 ; same
+			SUB R27, R21
+	LOOP3:  LDI R28, 10  ; constant delay spacing
+	LOOP4:  SBIC PIND, 4 ; Checks the button presses during the delay loop so it doesn't miss presses while delaying
+			CALL LEFT_DEC
+			SBIC PINF, 6
+			CALL RIGHT_INC
+			DEC R28 ; if none of the buttons are pressed, it continues with the delay loop like normal
+			BRNE LOOP4
+			DEC R27
+			BRNE LOOP3
+			DEC R26
+			BRNE LOOP2
+			DEC R25
+			BRNE LOOP1
+			RET
 
 ;////////////// BUTTON CHECKING FUNCTIONS ///////////////////
 ; Waits for the depress of the left button
@@ -49,7 +97,8 @@ RIGHT_INC:
 	SUB R22, R23 ; Subtracts constant 20 from the temporary counter
 	BREQ SET_TO_ZERO ; Sets the counter to 0 if it is at 20
 	CALL WAIT_FOR_INACTIVE_RIGHT ; Waits for the depress of the button
-	RET
+	RJMP MAIN
+	;RET
 
 LEFT_DEC:
 	DEC R21
@@ -57,7 +106,8 @@ LEFT_DEC:
 	ADD R22, R24 ;R24 = 1, so if R23 = -1 This equals 0
 	BREQ SET_TO_TWENTY ; and if it equals zero, it resets the counter to 19
 	CALL WAIT_FOR_INACTIVE_LEFT
-	RET
+	RJMP MAIN
+	;RET
 
 
 SET_TO_ZERO:
@@ -123,5 +173,4 @@ BRNE LOWFREQ2
 DEC R17
 BRNE LOWFREQ1
 RET
-
-		
+	
