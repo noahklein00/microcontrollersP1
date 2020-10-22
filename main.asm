@@ -61,7 +61,7 @@ DELAY_LED:	MOV R25, R31 ; Sets registers with 30
 			SUB R26, R21
 	LOOP2:	MOV R27, R31 ; same
 			SUB R27, R21
-	LOOP3:  LDI R28, 10  ; constant delay spacing
+	LOOP3:  LDI R28, 15  ; constant delay spacing
 	LOOP4:  SBIC PIND, 4 ; Checks the button presses during the delay loop so it doesn't miss presses while delaying
 			CALL LEFT_DEC
 			SBIC PINF, 6
